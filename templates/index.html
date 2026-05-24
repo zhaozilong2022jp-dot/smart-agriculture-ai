@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>智慧农业AI系统</title>
+</head>
+
+ <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            margin: 0;
+        }
+
+        .container {
+            width: 400px;
+            margin: 80px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 95%;
+            padding: 12px;
+            background: #4facfe;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #00c6ff;
+        }
+
+        /* ✅ 结果颜色 */
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .need-water {
+            color: red;
+        }
+
+        .no-water {
+            color: green;
+        }
+
+        /* 🔄 加载动画 */
+        .loader {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 5px solid #eee;
+            border-top: 5px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin: auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        img {
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+    </style>
+
+    <script>
+        function showLoading() {
+            document.getElementById("loader").style.display = "block";
+        }
+    </script>
+
+</head>
+
+<body>
+
+<div class="container">
+    <h1>🌾 智慧农业AI</h1>
+
+    <form method="POST" onsubmit="showLoading()">
+        <input type="number" name="temperature" step="any" placeholder="🌡 温度" required>
+        <input type="number" name="humidity" step="any" placeholder="💧 湿度" required>
+        <input type="number" name="soil" step="any" placeholder="🌱 土壤湿度" required>
+
+        <button type="submit">🚀 开始预测</button>
+    </form>
+
+    <!-- 🔄 加载动画 -->
+    <div id="loader" class="loader">
+        <div class="spinner"></div>
+        <p>AI正在分析中...</p>
+    </div>
+
+    {% if result %}
+        <div class="result
+            {% if '需要浇水' in result %}need-water{% else %}no-water{% endif %}">
+            {{ result }}
+        </div>
+    {% endif %}
+
+    {% if image_path %}
+        <img src="{{ image_path }}" width="100%">
+    {% endif %}
+</div>
+</body>
+</html>
