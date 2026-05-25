@@ -1,78 +1,73 @@
-from flask import Flask, render_template, request
-import matplotlib
-matplotlib.use('Agg')  # ✅ 关闭GUI，改为后台绘图
-import matplotlib.pyplot as plt
+from flask import Flask, request, jsonify,render_template
+from flask_cors import CORS
 import pandas as pd
+import joblib
 import os
-from sklearn.ensemble import RandomForestClassifier
+
 
 app = Flask(__name__)
+CORS(app)  # ⭐ 允许前端调用API
 
-# 创建 static 文件夹（存图）
-if not os.path.exists("static"):
-    os.makedirs("static")
+model = joblib.load("model.pkl")
+# =========================
+# 加载模型（必须）
+# =========================
+MODEL_PATH = "model.pkl"
+
+if not os.path.exists(MODEL_PATH):
+    raise FileNotFoundError("❌ model.pkl 不存在，请先运行 train.py")
+
+model = joblib.load(MODEL_PATH)
+
 
 # =========================
-# 训练模型
+# API接口
 # =========================
-data = pd.read_csv("agri_data.csv")
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        data = request.get_json()
 
-X = data[['temperature', 'humidity', 'soil_moisture']]
-y = data['watering_needed']
+        # 获取输入
+        temp = float(data["temperature"])
+        hum = float(data["humidity"])
+        soil = float(data["soil_moisture"])
 
-model = RandomForestClassifier(n_estimators=100)
-model.fit(X, y)
+        # 转换成模型输入
+        input_data = pd.DataFrame([[temp, hum, soil]],
+                                   columns=['temperature', 'humidity', 'soil_moisture'])
+
+        # 预测
+        prediction = model.predict(input_data)[0]
+
+        # 返回结果
+        result_text = "需要浇水" if prediction == 1 else "不需要浇水"
+
+        return jsonify({
+            "prediction": int(prediction),
+            "result": result_text
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 400
+
 
 # =========================
-# 首页
-# =========================
-import time  # ⭐ 放在最上面
-@app.route("/", methods=["GET", "POST"])
-def index():
-    result = None
-    image_path = None
-    # 可以提前算好，放到函数外
-    need_water = data[data['watering_needed'] == 1]
-    no_water = data[data['watering_needed'] == 0]
-    if request.method == "POST":
-        temp = float(request.form["temperature"])
-        hum = float(request.form["humidity"])
-        soil = float(request.form["soil"])
+# # 健康检查接口（可选但很加分）
+# # =========================
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "status": "ok",
+        "message": "Smart Agriculture API is running"
+    })
 
-        new_data = pd.DataFrame([[temp, hum, soil]],
-                                columns=['temperature', 'humidity', 'soil_moisture'])
-
-        prediction = model.predict(new_data)[0]
-
-        if prediction == 1:
-            result = "🌱 需要浇水！"
-        else:
-            result = "🌿 不需要浇水"
-
-        # =========================
-        # 生成图表（关键🔥）
-        # =========================
-        plt.figure()
-
-        plt.scatter(need_water['temperature'], need_water['soil_moisture'], label='Need Water')
-        plt.scatter(no_water['temperature'], no_water['soil_moisture'], label='No Water')
-
-        # 🔴 当前输入
-        plt.scatter(temp, soil, color='red', s=100, label='Your Input')
-
-        plt.xlabel("Temperature")
-        plt.ylabel("Soil Moisture")
-        plt.title("Smart Agriculture AI System")
-        plt.legend()
-        plt.grid()
-
-
-        plt.savefig("static/result.png")
-        plt.close()
-        # ⭐ 防缓存关键！
-        image_path = f"/static/result.png?t={int(time.time())}"
-    return render_template("index.html", result=result, image_path=image_path)
-
-
+@app.route("/ui")
+def ui():
+    return render_template("Index.API.html")
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000)
+
+
